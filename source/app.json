@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "LearnCoding",
+    "slug": "learncoding",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#EEEBFF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.learncoding.app"
+    },
+    "android": {
+      "package": "com.learncoding.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#EEEBFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "name": "LearnCoding"
+    }
+  }
+}
