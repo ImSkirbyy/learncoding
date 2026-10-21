@@ -5,8 +5,11 @@ import { luau } from './luau';
 import { java } from './java';
 import { cpp } from './cpp';
 import { arduino } from './arduino';
+import { japanese } from './japanese';
 
-export const courses: Course[] = [python, javascript, luau, java, cpp, arduino];
+export const courses: Course[] = [python, javascript, luau, java, cpp, arduino, japanese];
+
+export const isLanguage = (c: Course) => c.kind === 'language';
 
 export function getCourse(id: CourseId): Course {
   return courses.find((c) => c.id === id) ?? python;

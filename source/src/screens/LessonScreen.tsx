@@ -7,7 +7,8 @@ import { LessonRef } from '../courses';
 import { colors, font, radius } from '../theme';
 import { Button, CodeBlock, ProgressBar, Rich } from '../components/ui';
 import { Mascot } from '../components/Mascot';
-import { Bulb, Check, Cross, Heart } from '../components/Icons';
+import { Bulb, Check, Cross, Heart, Speaker } from '../components/Icons';
+import { speak, stopSpeaking } from '../speech';
 import { useProgress } from '../progress';
 
 export interface LessonResult {
@@ -68,17 +69,19 @@ export function LessonScreen({ lessonRef, onClose, onFinish }: { lessonRef: Less
   }, [ex, pos]);
 
   useEffect(() => setShowHint(false), [pos]);
+  useEffect(() => () => stopSpeaking(), []);
 
   useEffect(() => {
     Animated.spring(sheet, { toValue: status === 'answering' ? 0 : 1, useNativeDriver: Platform.OS !== 'web', friction: 8 }).start();
   }, [status]);
 
-  const canCheck = ex.type === 'info' || (ex.type === 'order' ? ((value as number[] | null)?.length ?? 0) > 0 : value != null);
+  const canCheck = ex.type === 'info' || (ex.type === 'match' ? value === true : ex.type === 'order' ? ((value as number[] | null)?.length ?? 0) > 0 : value != null);
 
   function solutionText(e: Exercise): string {
     if (e.type === 'choice') return e.options[e.answer];
     if (e.type === 'fill') return e.answer;
-    if (e.type === 'order') return e.parts.join(e.mode === 'lines' ? '\n' : ' ');
+    if (e.type === 'order') return e.parts.join(e.joiner ?? (e.mode === 'lines' ? '\n' : ' '));
+    if (e.type === 'match') return e.pairs.map(([l, r]) => `${l} = ${r}`).join('\n');
     return '';
   }
 
@@ -156,11 +159,12 @@ export function LessonScreen({ lessonRef, onClose, onFinish }: { lessonRef: Less
             {requeued.has(ex) && pos >= lesson.exercises.length && <Text style={styles.retry}>⟳ NOCHMAL ÜBEN</Text>}
             <Text style={styles.prompt}>{ex.prompt}</Text>
             {ex.type === 'choice' && (
-              <ChoiceView ex={ex} course={course} options={choices} value={value} setValue={setValue} status={status} />
+              <ChoiceView key={pos} ex={ex} course={course} options={choices} value={value} setValue={setValue} status={status} />
             )}
-            {ex.type === 'fill' && <FillView ex={ex} course={course} options={choices} value={value} setValue={setValue} status={status} />}
-            {ex.type === 'order' && <OrderView ex={ex} course={course} options={choices} value={value} setValue={setValue} status={status} />}
-            {ex.hint && status === 'answering' && (
+            {ex.type === 'fill' && <FillView key={pos} ex={ex} course={course} options={choices} value={value} setValue={setValue} status={status} />}
+            {ex.type === 'order' && <OrderView key={pos} ex={ex} course={course} options={choices} value={value} setValue={setValue} status={status} />}
+            {ex.type === 'match' && <MatchView key={pos} ex={ex} course={course} options={choices} value={value} setValue={setValue} status={status} />}
+            {'hint' in ex && ex.hint && status === 'answering' && (
               <Pressable onPress={() => setShowHint((h) => !h)} style={styles.hintBtn}>
                 <Bulb size={20} />
                 <Text style={styles.hintBtnText}>{showHint ? ex.hint : 'Tipp anzeigen'}</Text>
@@ -196,10 +200,10 @@ export function LessonScreen({ lessonRef, onClose, onFinish }: { lessonRef: Less
           {status === 'wrong' && (
             <View style={{ marginBottom: 6 }}>
               <Text style={[styles.sheetLabel, { color: colors.redDark }]}>Richtige Lösung:</Text>
-              <Text style={[styles.solution, { color: colors.redDark }]}>{solutionText(ex)}</Text>
+              <Text style={[styles.solution, { color: colors.redDark }, course.kind === 'language' && { fontFamily: font.bold, fontSize: 17 }]}>{solutionText(ex)}</Text>
             </View>
           )}
-          {'explain' in ex && <Text style={[styles.explain, { color: status === 'right' ? colors.greenDark : colors.redDark }]}>{ex.explain}</Text>}
+          {'explain' in ex && !!ex.explain && <Text style={[styles.explain, { color: status === 'right' ? colors.greenDark : colors.redDark }]}>{ex.explain}</Text>}
           <Button
             title="Weiter"
             onPress={next}
@@ -267,6 +271,16 @@ function InfoView({ ex, course }: { ex: Extract<Exercise, { type: 'info' }>; cou
           <CodeBlock code={ex.code} keywords={course.keywords} lineComment={course.lineComment} />
         </View>
       )}
+      {ex.examples?.map((p, i) => (
+        <Pressable key={i} onPress={() => speak(p.jp, lang(course))} style={styles.example} accessibilityLabel={`${p.de} vorlesen`}>
+          <SpeakIcon course={course} />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.exJp}>{p.jp}</Text>
+            <Text style={styles.exRomaji}>{p.romaji}</Text>
+            <Text style={styles.exDe}>{p.de}</Text>
+          </View>
+        </Pressable>
+      ))}
       {ex.tip && (
         <View style={styles.tip}>
           <Bulb size={22} />
@@ -274,6 +288,30 @@ function InfoView({ ex, course }: { ex: Extract<Exercise, { type: 'info' }>; cou
         </View>
       )}
     </View>
+  );
+}
+
+const lang = (c: Course) => c.speech ?? 'ja-JP';
+const isLang = (c: Course) => c.kind === 'language';
+// Einzelne Partikel klingen allein falsch (は wird als „ha“ statt „wa“ gelesen) – die werden nicht vorgelesen.
+const speakToken = (t: string, c: Course) => {
+  if (t === 'は' || t === 'へ' || !/[\u3040-\u30ff\u4e00-\u9fff]/.test(t)) return;
+  speak(t, lang(c));
+};
+
+function SpeakIcon({ course, size = 40 }: { course: Course; size?: number }) {
+  return (
+    <View style={[styles.speakBtn, { width: size, height: size, borderRadius: size / 2, backgroundColor: course.color }]}>
+      <Speaker size={size * 0.55} />
+    </View>
+  );
+}
+
+function SpeakButton({ text, course, size = 40 }: { text: string; course: Course; size?: number }) {
+  return (
+    <Pressable onPress={() => speak(text, lang(course))} hitSlop={8} accessibilityLabel="Vorlesen">
+      <SpeakIcon course={course} size={size} />
+    </Pressable>
   );
 }
 
@@ -287,11 +325,31 @@ function optionStyle(selected: boolean, status: Status, isAnswer: boolean, color
 
 function ChoiceView({ ex, course, options, value, setValue, status }: ViewProps<Extract<Exercise, { type: 'choice' }>>) {
   const locked = status !== 'answering';
+  useEffect(() => {
+    if (ex.listen && ex.big) speak(ex.big, lang(course));
+  }, [ex]);
   return (
     <View>
       {ex.code && (
         <View style={{ marginBottom: 18 }}>
           <CodeBlock code={ex.code} keywords={course.keywords} lineComment={course.lineComment} />
+        </View>
+      )}
+      {ex.big && ex.listen && (
+        <View style={styles.listenRow}>
+          <Pressable onPress={() => speak(ex.big!, lang(course))} accessibilityLabel="Anhören" style={[styles.listenBtn, { backgroundColor: course.color, borderColor: course.colorDark }]}>
+            <Speaker size={44} />
+          </Pressable>
+          {locked && <Text style={styles.bigJp}>{ex.big}</Text>}
+        </View>
+      )}
+      {ex.big && !ex.listen && (
+        <View style={styles.bigCard}>
+          <SpeakButton text={ex.big} course={course} size={44} />
+          <View style={{ marginLeft: 14, flexShrink: 1 }}>
+            <Text style={styles.bigJp}>{ex.big}</Text>
+            {!!ex.romaji && <Text style={styles.exRomaji}>{ex.romaji}</Text>}
+          </View>
         </View>
       )}
       {options.map((opt, i) => {
@@ -300,13 +358,17 @@ function ChoiceView({ ex, course, options, value, setValue, status }: ViewProps<
         return (
           <Pressable
             key={opt}
-            onPress={() => !locked && setValue(opt)}
+            onPress={() => {
+              if (locked) return;
+              setValue(opt);
+              if (ex.speakOptions) speak(opt, lang(course));
+            }}
             style={[styles.option, optionStyle(selected, status, isAnswer, course.color)]}
           >
             <View style={[styles.optionKey, selected && { borderColor: course.color }]}>
               <Text style={[styles.optionKeyText, selected && { color: course.color }]}>{i + 1}</Text>
             </View>
-            <Text style={[styles.optionText, /[(){};"=<>]/.test(opt) && { fontFamily: 'JetBrainsMono_500Medium', fontSize: 15 }]}>{opt}</Text>
+            <Text style={[styles.optionText, !isLang(course) && /[(){};"=<>]/.test(opt) && { fontFamily: 'JetBrainsMono_500Medium', fontSize: 15 }, ex.speakOptions && { fontSize: 20 }]}>{opt}</Text>
           </Pressable>
         );
       })}
@@ -316,6 +378,45 @@ function ChoiceView({ ex, course, options, value, setValue, status }: ViewProps<
 
 function FillView({ ex, course, options, value, setValue, status }: ViewProps<Extract<Exercise, { type: 'fill' }>>) {
   const locked = status !== 'answering';
+  if (isLang(course)) {
+    const [before, after] = ex.code.split('___');
+    const state = status === 'answering' ? 'idle' : status;
+    return (
+      <View>
+        <View style={styles.sentenceCard}>
+          <Text style={styles.sentence}>
+            {before}
+            <Text style={[styles.blank, value && { color: course.colorDark }, state === 'right' && { color: colors.greenDark }, state === 'wrong' && { color: colors.redDark }]}>
+              {value ?? '＿＿＿'}
+            </Text>
+            {after}
+          </Text>
+          {!!ex.hint_de && <Text style={styles.exDe}>{ex.hint_de}</Text>}
+          {locked && (
+            <View style={{ marginTop: 10, alignSelf: 'flex-start' }}>
+              <SpeakButton text={ex.code.replace('___', ex.answer)} course={course} size={36} />
+            </View>
+          )}
+        </View>
+        <Text style={styles.bankLabel}>Tippe auf das passende Wort:</Text>
+        <View style={styles.bank}>
+          {options.map((opt) => (
+            <Chip
+              key={opt}
+              label={opt}
+              lang
+              used={value === opt}
+              onPress={() => {
+                if (locked) return;
+                setValue(value === opt ? null : opt);
+                if (value !== opt) speakToken(opt, course);
+              }}
+            />
+          ))}
+        </View>
+      </View>
+    );
+  }
   return (
     <View>
       <CodeBlock
@@ -339,30 +440,114 @@ function OrderView({ ex, course, options, value, setValue, status }: ViewProps<E
   const locked = status !== 'answering';
   const picked = value as number[];
   const lines = ex.mode === 'lines';
+  const L = isLang(course);
   return (
     <View>
+      {!!ex.source && (
+        <View style={styles.bigCard}>
+          {ex.speakSource && <SpeakButton text={ex.source} course={course} />}
+          <Text style={[styles.sourceText, ex.speakSource && { marginLeft: 12 }]}>{ex.source}</Text>
+        </View>
+      )}
       <View style={[styles.answerArea, lines && { flexDirection: 'column', alignItems: 'stretch' }]}>
         {picked.length === 0 && <Text style={styles.answerHint}>Tippe unten auf die Bausteine …</Text>}
         {picked.map((i) => (
-          <Chip key={i} label={options[i]} code onPress={() => !locked && setValue(picked.filter((p) => p !== i))} block={lines} />
+          <Chip key={i} label={options[i]} code={!L} lang={L} onPress={() => !locked && setValue(picked.filter((p) => p !== i))} block={lines} />
         ))}
       </View>
       <View style={[styles.bank, lines && { flexDirection: 'column', alignItems: 'stretch' }]}>
         {options.map((opt, i) => (
-          <Chip key={i} label={opt} code used={picked.includes(i)} block={lines} onPress={() => !locked && !picked.includes(i) && setValue([...picked, i])} />
+          <Chip
+            key={i}
+            label={opt}
+            code={!L}
+            lang={L}
+            used={picked.includes(i)}
+            block={lines}
+            onPress={() => {
+              if (locked || picked.includes(i)) return;
+              setValue([...picked, i]);
+              if (ex.speakParts) speakToken(opt, course);
+            }}
+          />
         ))}
       </View>
     </View>
   );
 }
 
-function Chip({ label, used, onPress, code, block }: { label: string; used?: boolean; onPress: () => void; code?: boolean; block?: boolean }) {
+function MatchView({ ex, course, setValue, status }: ViewProps<Extract<Exercise, { type: 'match' }>>) {
+  const left = useMemo(() => shuffle(ex.pairs.map((_, i) => i)), [ex]);
+  const right = useMemo(() => shuffle(ex.pairs.map((_, i) => i)), [ex]);
+  const [selL, setSelL] = useState<number | null>(null);
+  const [selR, setSelR] = useState<number | null>(null);
+  const [done, setDone] = useState<number[]>([]);
+  const [wrong, setWrong] = useState<[number, number] | null>(null);
+  const locked = status !== 'answering';
+
+  function tryPair(l: number | null, r: number | null) {
+    if (l == null || r == null) return;
+    if (l === r) {
+      const d = [...done, l];
+      setDone(d);
+      if (d.length === ex.pairs.length) setValue(true);
+    } else {
+      setWrong([l, r]);
+      setTimeout(() => setWrong(null), 650);
+    }
+    setSelL(null);
+    setSelR(null);
+  }
+
+  const cell = (side: 'l' | 'r', i: number) => {
+    const isDone = done.includes(i);
+    const sel = side === 'l' ? selL === i : selR === i;
+    const bad = wrong && (side === 'l' ? wrong[0] === i : wrong[1] === i);
+    const text = ex.pairs[i][side === 'l' ? 0 : 1];
+    const jp = /[\u3040-\u30ff\u4e00-\u9fff]/.test(text);
+    return (
+      <Pressable
+        key={side + i}
+        disabled={isDone || locked}
+        onPress={() => {
+          if (side === 'l') {
+            setSelL(i);
+            if (ex.speakLeft) speak(text, lang(course));
+            tryPair(i, selR);
+          } else {
+            setSelR(i);
+            if (jp) speak(text, lang(course));
+            tryPair(selL, i);
+          }
+        }}
+        style={[
+          styles.matchCell,
+          sel && { borderColor: course.color, backgroundColor: course.color + '18' },
+          bad && { borderColor: colors.red, backgroundColor: colors.redSoft },
+          isDone && { borderColor: colors.greenSoft, backgroundColor: colors.greenSoft },
+        ]}
+      >
+        <Text style={[styles.matchText, jp && { fontSize: 22 }, isDone && { color: colors.greenDark, opacity: 0.6 }]}>{text}</Text>
+      </Pressable>
+    );
+  };
+
+  return (
+    <View style={{ flexDirection: 'row', gap: 12 }}>
+      <View style={{ flex: 1 }}>{left.map((i) => cell('l', i))}</View>
+      <View style={{ flex: 1 }}>{right.map((i) => cell('r', i))}</View>
+    </View>
+  );
+}
+
+function Chip({ label, used, onPress, code, block, lang: isLangChip }: { label: string; used?: boolean; onPress: () => void; code?: boolean; block?: boolean; lang?: boolean }) {
   return (
     <Pressable onPress={onPress} style={[styles.chip, block && { alignSelf: 'stretch' }, used && styles.chipUsed]}>
       <Text
         style={[
           styles.chipText,
-          { fontFamily: code || /[^A-Za-zÄÖÜäöüß ]/.test(label) ? 'JetBrainsMono_500Medium' : font.bold },
+          { fontFamily: !isLangChip && (code || /[^A-Za-zÄÖÜäöüß ]/.test(label)) ? 'JetBrainsMono_500Medium' : font.bold },
+          isLangChip && { fontSize: 19 },
           used && { color: 'transparent' },
         ]}
       >
@@ -407,6 +592,21 @@ const styles = StyleSheet.create({
   chip: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 2, borderBottomWidth: 4, borderColor: colors.border, backgroundColor: colors.card },
   chipUsed: { backgroundColor: colors.locked, borderColor: colors.locked },
   chipText: { fontSize: 15, color: colors.text },
+  example: { flexDirection: 'row', alignItems: 'center', marginTop: 12, padding: 14, borderRadius: radius.md, borderWidth: 2, borderBottomWidth: 4, borderColor: colors.border, backgroundColor: colors.card },
+  exJp: { fontFamily: font.bold, fontSize: 24, color: colors.text },
+  exRomaji: { fontFamily: font.bold, fontSize: 15, color: colors.textSoft, marginTop: 2 },
+  exDe: { fontFamily: font.regular, fontSize: 15, color: colors.text, marginTop: 4 },
+  speakBtn: { alignItems: 'center', justifyContent: 'center' },
+  listenRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
+  listenBtn: { width: 92, height: 92, borderRadius: 24, borderBottomWidth: 5, alignItems: 'center', justifyContent: 'center' },
+  bigCard: { flexDirection: 'row', alignItems: 'center', padding: 16, marginBottom: 18, borderRadius: radius.lg, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.bg },
+  bigJp: { fontFamily: font.bold, fontSize: 32, color: colors.text, flexShrink: 1 },
+  sourceText: { fontFamily: font.black, fontSize: 19, color: colors.text, flexShrink: 1 },
+  sentenceCard: { padding: 16, borderRadius: radius.lg, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.bg },
+  sentence: { fontFamily: font.bold, fontSize: 24, lineHeight: 36, color: colors.text },
+  blank: { fontFamily: font.black, color: '#A0A4B8', textDecorationLine: 'underline' },
+  matchCell: { minHeight: 58, justifyContent: 'center', alignItems: 'center', padding: 10, marginBottom: 10, borderRadius: radius.md, borderWidth: 2, borderBottomWidth: 4, borderColor: colors.border, backgroundColor: colors.card },
+  matchText: { fontFamily: font.bold, fontSize: 16, color: colors.text, textAlign: 'center' },
   modalBg: { flex: 1, backgroundColor: 'rgba(20,20,40,0.55)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modal: { backgroundColor: colors.card, borderRadius: radius.xl, padding: 24, alignItems: 'center', width: '100%', maxWidth: 380 },
   modalTitle: { fontFamily: font.black, fontSize: 22, color: colors.text, marginTop: 8 },

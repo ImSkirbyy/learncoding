@@ -28,7 +28,7 @@ export function ProfileScreen() {
     { title: 'Fleißig', desc: 'Schließe 10 Lektionen ab', done: lessonsDone >= 10, Icon: Book },
     { title: 'Feuer & Flamme', desc: 'Erreiche einen 3-Tage-Streak', done: state.bestStreak >= 3, Icon: Flame },
     { title: 'Fehlerfrei', desc: '5 perfekte Lektionen', done: perfectCount >= 5, Icon: Trophy },
-    { title: 'Polyglott', desc: 'Lerne 3 verschiedene Sprachen', done: started.length >= 3, Icon: Bolt },
+    { title: 'Polyglott', desc: 'Starte 3 verschiedene Kurse', done: started.length >= 3, Icon: Bolt },
   ];
 
   return (

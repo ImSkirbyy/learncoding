@@ -1,4 +1,17 @@
-export type CourseId = 'python' | 'javascript' | 'luau' | 'java' | 'cpp' | 'arduino';
+export type CourseId = 'python' | 'javascript' | 'luau' | 'java' | 'cpp' | 'arduino' | 'japanese';
+
+/** Programmiersprache oder gesprochene Sprache – steuert den Umschalter und die Darstellung. */
+export type CourseKind = 'code' | 'language';
+
+/** Ein Beispiel in einem Sprachkurs: Originaltext, Aussprache-Hilfe und Übersetzung. */
+export interface Phrase {
+  /** Text in der Zielsprache (z. B. こんにちは). Wird vorgelesen. */
+  jp: string;
+  /** Lautschrift (Rōmaji), z. B. konnichiwa */
+  romaji: string;
+  /** Deutsche Bedeutung */
+  de: string;
+}
 
 /** Eine Erklär-Karte: bringt etwas Neues bei, ohne Fragen zu stellen. */
 export interface InfoExercise {
@@ -8,6 +21,8 @@ export interface InfoExercise {
   text: string;
   code?: string;
   tip?: string;
+  /** Sprachkurse: Beispiele mit Vorlese-Knopf. */
+  examples?: Phrase[];
 }
 
 /** Multiple Choice. Mit `code` wird oft "Was gibt das aus?" gefragt. */
@@ -15,6 +30,14 @@ export interface ChoiceExercise {
   type: 'choice';
   prompt: string;
   code?: string;
+  /** Sprachkurse: großer Text in der Zielsprache über den Antworten (mit Vorlese-Knopf). */
+  big?: string;
+  /** Lautschrift unter `big` (weglassen, wenn genau die Aussprache abgefragt wird). */
+  romaji?: string;
+  /** Hör-Aufgabe: `big` wird nur vorgelesen, nicht angezeigt. */
+  listen?: boolean;
+  /** Antworten sind in der Zielsprache und bekommen einen Vorlese-Knopf. */
+  speakOptions?: boolean;
   options: string[];
   /** Index der richtigen Antwort in `options`. */
   answer: number;
@@ -26,7 +49,10 @@ export interface ChoiceExercise {
 export interface FillExercise {
   type: 'fill';
   prompt: string;
+  /** Code bzw. in Sprachkursen ein Satz – enthält genau einmal `___`. */
   code: string;
+  /** Sprachkurse: Übersetzung des Satzes als Hilfe. */
+  hint_de?: string;
   options: string[];
   /** Muss genau einem Eintrag in `options` entsprechen. */
   answer: string;
@@ -44,11 +70,30 @@ export interface OrderExercise {
   distractors?: string[];
   /** 'lines' = jede Zeile ein Baustein, 'tokens' = Wörter einer Zeile. */
   mode: 'lines' | 'tokens';
+  /** Sprachkurse: Satz, der übersetzt werden soll (wird oben angezeigt). */
+  source?: string;
+  /** Wird `source` vorgelesen? (nur wenn es Zielsprache ist) */
+  speakSource?: boolean;
+  /** Bausteine sind Zielsprache: Vorlesen beim Antippen. */
+  speakParts?: boolean;
+  /** Trennzeichen beim Anzeigen der Lösung (Japanisch: ''). Standard: Leerzeichen bzw. Zeilenumbruch. */
+  joiner?: string;
   explain: string;
   hint?: string;
 }
 
-export type Exercise = InfoExercise | ChoiceExercise | FillExercise | OrderExercise;
+/** Paare finden: links und rechts antippen, die zusammengehören. */
+export interface MatchExercise {
+  type: 'match';
+  prompt: string;
+  /** [links, rechts] – z. B. ['あ', 'a'] oder ['みず', 'Wasser']. 3 bis 5 Paare. */
+  pairs: [string, string][];
+  /** Linke Seite vorlesen, wenn angetippt (Zielsprache). */
+  speakLeft?: boolean;
+  explain?: string;
+}
+
+export type Exercise = InfoExercise | ChoiceExercise | FillExercise | OrderExercise | MatchExercise;
 
 export interface Lesson {
   id: string;
@@ -65,6 +110,10 @@ export interface Unit {
 
 export interface Course {
   id: CourseId;
+  /** Standard: 'code' */
+  kind?: CourseKind;
+  /** Sprachkurse: Stimme für das Vorlesen, z. B. 'ja-JP'. */
+  speech?: string;
   name: string;
   /** Ein Satz, wofür die Sprache genutzt wird. */
   tagline: string;

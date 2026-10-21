@@ -1,6 +1,6 @@
 # LearnCoding
 
-Programmieren lernen wie bei Duolingo: Python, JavaScript, Luau, Java, C++ und Arduino.
+Lernen wie bei Duolingo – **Programmieren** (Python, JavaScript, Luau, Java, C++, Arduino) und **Sprachen** (Japanisch für Deutsche, ab null, mit Vorlese-Funktion).
 
 **App öffnen:** https://imskirbyy.github.io/learncoding/
 
@@ -8,3 +8,8 @@ Programmieren lernen wie bei Duolingo: Python, JavaScript, Luau, Java, C++ und A
 - **Android:** [LearnCoding.apk](LearnCoding.apk) herunterladen und installieren (einmal „unbekannte Apps“ erlauben).
 
 Der Quellcode (Expo / React Native) liegt in [`source/`](source/), dort steht auch, wie man die App neu baut.
+
+
+**Fortschritt:** wird auf dem Gerät gespeichert und bleibt bei Updates erhalten.
+
+**Vorlesen auf Android:** Falls nichts zu hören ist, in den Handy-Einstellungen unter „Sprachausgabe“ (Text-in-Sprache) die japanischen Sprachdaten installieren.

@@ -2,7 +2,7 @@
  "name": "LearnCoding",
  "short_name": "LearnCoding",
  "lang": "de",
- "description": "Programmieren lernen in kleinen Häppchen",
+ "description": "Programmieren und Sprachen lernen in kleinen Häppchen",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",

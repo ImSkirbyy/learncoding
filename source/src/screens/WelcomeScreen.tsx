@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, font, radius } from '../theme';
 import { Mascot } from '../components/Mascot';
 import { Button, ProgressBar } from '../components/ui';
-import { CourseList } from './CoursesScreen';
-import { CourseId } from '../types';
+import { CourseList, KindSwitch } from './CoursesScreen';
+import { CourseId, CourseKind } from '../types';
 import { useProgress } from '../progress';
 
 const GOALS = [
@@ -21,6 +21,7 @@ export function WelcomeScreen() {
   const [step, setStep] = useState(0);
   const [course, setCourse] = useState<CourseId | null>(null);
   const [goal, setGoal] = useState(30);
+  const [kind, setKind] = useState<CourseKind>('code');
 
   if (step === 0) {
     return (
@@ -30,9 +31,9 @@ export function WelcomeScreen() {
             <Mascot size={190} mood="wave" />
           </View>
           <Text style={styles.brand}>LearnCoding</Text>
-          <Text style={styles.lead}>Hi, ich bin Bit! Ich bringe dir Programmieren bei – in kleinen Häppchen, ganz ohne Vorwissen.</Text>
+          <Text style={styles.lead}>Hi, ich bin Bit! Ich bringe dir Programmieren und Sprachen bei – in kleinen Häppchen, ganz ohne Vorwissen.</Text>
           <View style={styles.pills}>
-            {['6 Sprachen', 'Kurze Lektionen', 'Für Anfänger'].map((t) => (
+            {['6 Programmiersprachen', 'Japanisch', 'Kurze Lektionen', 'Für Anfänger'].map((t) => (
               <View key={t} style={styles.pill}>
                 <Text style={styles.pillText}>{t}</Text>
               </View>
@@ -55,14 +56,19 @@ export function WelcomeScreen() {
       <View style={styles.ask}>
         <Mascot size={78} mood={step === 1 ? 'happy' : 'think'} />
         <View style={styles.bubble}>
-          <Text style={styles.bubbleText}>{step === 1 ? 'Welche Sprache möchtest du lernen?' : 'Wie viel Zeit möchtest du täglich üben?'}</Text>
+          <Text style={styles.bubbleText}>{step === 1 ? 'Was möchtest du lernen?' : 'Wie viel Zeit möchtest du täglich üben?'}</Text>
         </View>
       </View>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 16 }}>
         {step === 1 ? (
           <>
-            <CourseList selected={course} onSelect={setCourse} showProgress={false} />
-            <Text style={styles.note}>Unsicher? Starte mit Python oder Luau – die sind besonders leicht. Du kannst jederzeit wechseln.</Text>
+            <KindSwitch value={kind} onChange={setKind} />
+            <CourseList selected={course} onSelect={setCourse} showProgress={false} kind={kind} />
+            <Text style={styles.note}>
+              {kind === 'code'
+                ? 'Unsicher? Starte mit Python oder Luau – die sind besonders leicht. Du kannst jederzeit wechseln.'
+                : 'Japanisch startet bei null: erst Begrüßungen, dann Schritt für Schritt die Schrift. Alles kann vorgelesen werden.'}
+            </Text>
           </>
         ) : (
           GOALS.map((g) => (

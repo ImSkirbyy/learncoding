@@ -94,6 +94,25 @@ export const UserIcon = ({ size = 26, color = '#FFF' }: P) => (
   </Svg>
 );
 
+export const Speaker = ({ size = 24, color = '#FFF' }: P) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M4 9.5h3.5L12.5 5v14l-5-4.5H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z" fill={color} />
+    <Path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" stroke={color} strokeWidth={2.2} strokeLinecap="round" fill="none" />
+  </Svg>
+);
+
+export const CodeIcon = ({ size = 22, color = '#FFF' }: P) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+  </Svg>
+);
+
+export const ChatIcon = ({ size = 22, color = '#FFF' }: P) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z" fill={color} />
+  </Svg>
+);
+
 /** Selbst gestaltete Sprach-Abzeichen (keine offiziellen Logos). */
 export function LangIcon({ id, size = 48 }: { id: CourseId; size?: number }) {
   return (
@@ -144,6 +163,13 @@ export function LangIcon({ id, size = 48 }: { id: CourseId; size?: number }) {
             <Rect key={`b${i}`} x={22 + i * 5} y="42" width="3" height="3" fill="#FACC15" />
           ))}
           <Circle cx="19" cy="40" r="2.5" fill="#22C55E" />
+        </G>
+      )}
+      {id === 'japanese' && (
+        <G>
+          <Rect x="2" y="2" width="60" height="60" rx="18" fill="#FFF1F2" stroke="#FECDD3" strokeWidth={2} />
+          <Circle cx="32" cy="32" r="18" fill="#E11D48" />
+          <SvgText x="32" y="40" fontSize="22" fontWeight="900" fill="#FFF" textAnchor="middle">あ</SvgText>
         </G>
       )}
       {id === 'cpp' && (

@@ -37,7 +37,7 @@ export function TabBar({ tab, onTab, accent }: { tab: Tab; onTab: (t: Tab) => vo
   const insets = useSafeAreaInsets();
   const items: { id: Tab; label: string; Icon: typeof HomeIcon }[] = [
     { id: 'home', label: 'Lernen', Icon: HomeIcon },
-    { id: 'courses', label: 'Sprachen', Icon: GridIcon },
+    { id: 'courses', label: 'Kurse', Icon: GridIcon },
     { id: 'profile', label: 'Profil', Icon: UserIcon },
   ];
   return (
