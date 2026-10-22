@@ -274,11 +274,19 @@ function InfoView({ ex, course }: { ex: Extract<Exercise, { type: 'info' }>; cou
       {ex.examples?.map((p, i) => (
         <Pressable key={i} onPress={() => speak(p.jp, lang(course))} style={styles.example} accessibilityLabel={`${p.de} vorlesen`}>
           <SpeakIcon course={course} />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.exJp}>{p.jp}</Text>
-            <Text style={styles.exRomaji}>{p.romaji}</Text>
-            <Text style={styles.exDe}>{p.de}</Text>
-          </View>
+          {course.script === 'romaji' ? (
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.exJp}>{p.romaji}</Text>
+              <Text style={styles.exDe}>{p.de}</Text>
+              <Text style={styles.exScript}>{p.jp}</Text>
+            </View>
+          ) : (
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.exJp}>{p.jp}</Text>
+              <Text style={styles.exRomaji}>{p.romaji}</Text>
+              <Text style={styles.exDe}>{p.de}</Text>
+            </View>
+          )}
         </Pressable>
       ))}
       {ex.tip && (
@@ -293,11 +301,38 @@ function InfoView({ ex, course }: { ex: Extract<Exercise, { type: 'info' }>; cou
 
 const lang = (c: Course) => c.speech ?? 'ja-JP';
 const isLang = (c: Course) => c.kind === 'language';
-// Einzelne Partikel klingen allein falsch (は wird als „ha“ statt „wa“ gelesen) – die werden nicht vorgelesen.
-const speakToken = (t: string, c: Course) => {
-  if (t === 'は' || t === 'へ' || !/[\u3040-\u30ff\u4e00-\u9fff]/.test(t)) return;
-  speak(t, lang(c));
-};
+const hasJp = (t: string) => /[\u3040-\u30ff\u4e00-\u9fff]/.test(t);
+// Einzelne Partikel allein würden falsch gelesen (は als „ha“) – darum ihr Laut als Silbe.
+const PARTICLE: Record<string, string> = { は: 'わ', へ: 'え', を: 'お' };
+
+// Lautschrift → japanische Schrift aus allen Beispielen und `say`-Einträgen eines Kurses.
+const sayCache = new Map<string, Record<string, string>>();
+function courseSay(c: Course): Record<string, string> {
+  let d = sayCache.get(c.id);
+  if (!d) {
+    d = {};
+    for (const u of c.units)
+      for (const l of u.lessons)
+        for (const e of l.exercises) {
+          if (e.type === 'info') e.examples?.forEach((p) => (d![p.romaji] = p.jp));
+          else Object.assign(d, e.say);
+        }
+    sayCache.set(c.id, d);
+  }
+  return d;
+}
+
+/** Was die japanische Stimme für einen angezeigten Text sagen soll (null = nichts vorlesen). */
+function spoken(t: string, ex: Exercise, c: Course): string | null {
+  const v = ('say' in ex && ex.say?.[t]) || courseSay(c)[t] || (hasJp(t) ? t : null);
+  if (!v) return null;
+  return PARTICLE[v] ?? v;
+}
+
+function sayIt(t: string, ex: Exercise, c: Course) {
+  const v = spoken(t, ex, c);
+  if (v) speak(v, lang(c));
+}
 
 function SpeakIcon({ course, size = 40 }: { course: Course; size?: number }) {
   return (
@@ -307,9 +342,10 @@ function SpeakIcon({ course, size = 40 }: { course: Course; size?: number }) {
   );
 }
 
-function SpeakButton({ text, course, size = 40 }: { text: string; course: Course; size?: number }) {
+function SpeakButton({ text, ex, course, size = 40 }: { text: string; ex: Exercise; course: Course; size?: number }) {
+  if (!spoken(text, ex, course)) return null;
   return (
-    <Pressable onPress={() => speak(text, lang(course))} hitSlop={8} accessibilityLabel="Vorlesen">
+    <Pressable onPress={() => sayIt(text, ex, course)} hitSlop={8} accessibilityLabel="Vorlesen">
       <SpeakIcon course={course} size={size} />
     </Pressable>
   );
@@ -326,7 +362,7 @@ function optionStyle(selected: boolean, status: Status, isAnswer: boolean, color
 function ChoiceView({ ex, course, options, value, setValue, status }: ViewProps<Extract<Exercise, { type: 'choice' }>>) {
   const locked = status !== 'answering';
   useEffect(() => {
-    if (ex.listen && ex.big) speak(ex.big, lang(course));
+    if (ex.listen && ex.big) sayIt(ex.big, ex, course);
   }, [ex]);
   return (
     <View>
@@ -337,7 +373,7 @@ function ChoiceView({ ex, course, options, value, setValue, status }: ViewProps<
       )}
       {ex.big && ex.listen && (
         <View style={styles.listenRow}>
-          <Pressable onPress={() => speak(ex.big!, lang(course))} accessibilityLabel="Anhören" style={[styles.listenBtn, { backgroundColor: course.color, borderColor: course.colorDark }]}>
+          <Pressable onPress={() => sayIt(ex.big!, ex, course)} accessibilityLabel="Anhören" style={[styles.listenBtn, { backgroundColor: course.color, borderColor: course.colorDark }]}>
             <Speaker size={44} />
           </Pressable>
           {locked && <Text style={styles.bigJp}>{ex.big}</Text>}
@@ -345,7 +381,7 @@ function ChoiceView({ ex, course, options, value, setValue, status }: ViewProps<
       )}
       {ex.big && !ex.listen && (
         <View style={styles.bigCard}>
-          <SpeakButton text={ex.big} course={course} size={44} />
+          <SpeakButton text={ex.big} ex={ex} course={course} size={44} />
           <View style={{ marginLeft: 14, flexShrink: 1 }}>
             <Text style={styles.bigJp}>{ex.big}</Text>
             {!!ex.romaji && <Text style={styles.exRomaji}>{ex.romaji}</Text>}
@@ -361,7 +397,7 @@ function ChoiceView({ ex, course, options, value, setValue, status }: ViewProps<
             onPress={() => {
               if (locked) return;
               setValue(opt);
-              if (ex.speakOptions) speak(opt, lang(course));
+              if (ex.speakOptions) sayIt(opt, ex, course);
             }}
             style={[styles.option, optionStyle(selected, status, isAnswer, course.color)]}
           >
@@ -394,7 +430,7 @@ function FillView({ ex, course, options, value, setValue, status }: ViewProps<Ex
           {!!ex.hint_de && <Text style={styles.exDe}>{ex.hint_de}</Text>}
           {locked && (
             <View style={{ marginTop: 10, alignSelf: 'flex-start' }}>
-              <SpeakButton text={ex.code.replace('___', ex.answer)} course={course} size={36} />
+              <SpeakButton text={ex.code.replace('___', ex.answer)} ex={ex} course={course} size={36} />
             </View>
           )}
         </View>
@@ -409,7 +445,7 @@ function FillView({ ex, course, options, value, setValue, status }: ViewProps<Ex
               onPress={() => {
                 if (locked) return;
                 setValue(value === opt ? null : opt);
-                if (value !== opt) speakToken(opt, course);
+                if (value !== opt) sayIt(opt, ex, course);
               }}
             />
           ))}
@@ -445,8 +481,13 @@ function OrderView({ ex, course, options, value, setValue, status }: ViewProps<E
     <View>
       {!!ex.source && (
         <View style={styles.bigCard}>
-          {ex.speakSource && <SpeakButton text={ex.source} course={course} />}
+          {ex.speakSource && <SpeakButton text={ex.source} ex={ex} course={course} />}
           <Text style={[styles.sourceText, ex.speakSource && { marginLeft: 12 }]}>{ex.source}</Text>
+        </View>
+      )}
+      {locked && L && (
+        <View style={{ alignSelf: 'flex-start', marginBottom: 10 }}>
+          <SpeakButton text={ex.parts.join(ex.joiner ?? ' ')} ex={ex} course={course} size={36} />
         </View>
       )}
       <View style={[styles.answerArea, lines && { flexDirection: 'column', alignItems: 'stretch' }]}>
@@ -467,7 +508,7 @@ function OrderView({ ex, course, options, value, setValue, status }: ViewProps<E
             onPress={() => {
               if (locked || picked.includes(i)) return;
               setValue([...picked, i]);
-              if (ex.speakParts) speakToken(opt, course);
+              if (ex.speakParts) sayIt(opt, ex, course);
             }}
           />
         ))}
@@ -512,11 +553,11 @@ function MatchView({ ex, course, setValue, status }: ViewProps<Extract<Exercise,
         onPress={() => {
           if (side === 'l') {
             setSelL(i);
-            if (ex.speakLeft) speak(text, lang(course));
+            if (ex.speakLeft) sayIt(text, ex, course);
             tryPair(i, selR);
           } else {
             setSelR(i);
-            if (jp) speak(text, lang(course));
+            if (jp) sayIt(text, ex, course);
             tryPair(selL, i);
           }
         }}
@@ -594,6 +635,7 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 15, color: colors.text },
   example: { flexDirection: 'row', alignItems: 'center', marginTop: 12, padding: 14, borderRadius: radius.md, borderWidth: 2, borderBottomWidth: 4, borderColor: colors.border, backgroundColor: colors.card },
   exJp: { fontFamily: font.bold, fontSize: 24, color: colors.text },
+  exScript: { fontFamily: font.regular, fontSize: 14, color: colors.textSoft, marginTop: 4 },
   exRomaji: { fontFamily: font.bold, fontSize: 15, color: colors.textSoft, marginTop: 2 },
   exDe: { fontFamily: font.regular, fontSize: 15, color: colors.text, marginTop: 4 },
   speakBtn: { alignItems: 'center', justifyContent: 'center' },

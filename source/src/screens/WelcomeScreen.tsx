@@ -67,7 +67,7 @@ export function WelcomeScreen() {
             <Text style={styles.note}>
               {kind === 'code'
                 ? 'Unsicher? Starte mit Python oder Luau – die sind besonders leicht. Du kannst jederzeit wechseln.'
-                : 'Japanisch startet bei null: erst Begrüßungen, dann Schritt für Schritt die Schrift. Alles kann vorgelesen werden.'}
+                : 'Japanisch startet bei null und mit normalen Buchstaben. Die japanischen Schriftzeichen kannst du separat lernen. Alles kann vorgelesen werden.'}
             </Text>
           </>
         ) : (

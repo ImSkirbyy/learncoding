@@ -1,6 +1,6 @@
 # LearnCoding
 
-Lernen wie bei Duolingo – **Programmieren** (Python, JavaScript, Luau, Java, C++, Arduino) und **Sprachen** (Japanisch für Deutsche, ab null, mit Vorlese-Funktion).
+Lernen wie bei Duolingo – **Programmieren** (Python, JavaScript, Luau, Java, C++, Arduino) und **Sprachen** (Japanisch für Deutsche ab null in normalen Buchstaben, dazu ein eigener Kurs für die japanischen Schriftzeichen; mit Vorlese-Funktion).
 
 **App öffnen:** https://imskirbyy.github.io/learncoding/
 

@@ -106,7 +106,7 @@ export const u11: Unit = {
             { jp: '口', romaji: 'kuchi', de: 'Mund' },
             { jp: '水', romaji: 'mizu', de: 'Wasser' },
           ],
-          tip: 'みず kennst du schon aus dem Restaurant – jetzt kannst du es auch als Kanji lesen!',
+          tip: 'みず (mizu) heißt Wasser – jetzt kannst du es auch als Kanji lesen!',
         },
         {
           type: 'info',

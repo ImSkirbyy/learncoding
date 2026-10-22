@@ -1,4 +1,4 @@
-export type CourseId = 'python' | 'javascript' | 'luau' | 'java' | 'cpp' | 'arduino' | 'japanese';
+export type CourseId = 'python' | 'javascript' | 'luau' | 'java' | 'cpp' | 'arduino' | 'japanese' | 'kana';
 
 /** Programmiersprache oder gesprochene Sprache – steuert den Umschalter und die Darstellung. */
 export type CourseKind = 'code' | 'language';
@@ -38,6 +38,8 @@ export interface ChoiceExercise {
   listen?: boolean;
   /** Antworten sind in der Zielsprache und bekommen einen Vorlese-Knopf. */
   speakOptions?: boolean;
+  /** Sprachkurse mit Lautschrift: angezeigter Text → Text in japanischer Schrift fürs Vorlesen, z. B. { 'konnichiwa': 'こんにちは' }. */
+  say?: Record<string, string>;
   options: string[];
   /** Index der richtigen Antwort in `options`. */
   answer: number;
@@ -53,6 +55,8 @@ export interface FillExercise {
   code: string;
   /** Sprachkurse: Übersetzung des Satzes als Hilfe. */
   hint_de?: string;
+  /** Sprachkurse mit Lautschrift: angezeigter Text → Text in japanischer Schrift fürs Vorlesen, z. B. { 'konnichiwa': 'こんにちは' }. */
+  say?: Record<string, string>;
   options: string[];
   /** Muss genau einem Eintrag in `options` entsprechen. */
   answer: string;
@@ -78,6 +82,8 @@ export interface OrderExercise {
   speakParts?: boolean;
   /** Trennzeichen beim Anzeigen der Lösung (Japanisch: ''). Standard: Leerzeichen bzw. Zeilenumbruch. */
   joiner?: string;
+  /** Sprachkurse mit Lautschrift: angezeigter Text → Text in japanischer Schrift fürs Vorlesen, z. B. { 'konnichiwa': 'こんにちは' }. */
+  say?: Record<string, string>;
   explain: string;
   hint?: string;
 }
@@ -89,6 +95,8 @@ export interface MatchExercise {
   /** [links, rechts] – z. B. ['あ', 'a'] oder ['みず', 'Wasser']. 3 bis 5 Paare. */
   pairs: [string, string][];
   /** Linke Seite vorlesen, wenn angetippt (Zielsprache). */
+  /** Sprachkurse mit Lautschrift: angezeigter Text → Text in japanischer Schrift fürs Vorlesen, z. B. { 'konnichiwa': 'こんにちは' }. */
+  say?: Record<string, string>;
   speakLeft?: boolean;
   explain?: string;
 }
@@ -114,6 +122,8 @@ export interface Course {
   kind?: CourseKind;
   /** Sprachkurse: Stimme für das Vorlesen, z. B. 'ja-JP'. */
   speech?: string;
+  /** Sprachkurse: 'romaji' = Lautschrift groß, japanische Schrift nur klein darunter. */
+  script?: 'romaji' | 'native';
   name: string;
   /** Ein Satz, wofür die Sprache genutzt wird. */
   tagline: string;

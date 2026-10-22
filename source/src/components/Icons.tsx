@@ -172,6 +172,14 @@ export function LangIcon({ id, size = 48 }: { id: CourseId; size?: number }) {
           <SvgText x="32" y="40" fontSize="22" fontWeight="900" fill="#FFF" textAnchor="middle">あ</SvgText>
         </G>
       )}
+      {id === 'kana' && (
+        <G>
+          <Rect x="2" y="2" width="60" height="60" rx="18" fill="#0EA5E9" />
+          <Rect x="13" y="13" width="38" height="38" rx="6" fill="#FFF" />
+          <Path d="M32 13v38M13 32h38" stroke="#BAE6FD" strokeWidth={1.5} strokeDasharray="3 3" />
+          <SvgText x="32" y="42" fontSize="26" fontWeight="900" fill="#0369A1" textAnchor="middle">字</SvgText>
+        </G>
+      )}
       {id === 'cpp' && (
         <G>
           <Rect x="2" y="2" width="60" height="60" rx="18" fill="#14B8A6" />

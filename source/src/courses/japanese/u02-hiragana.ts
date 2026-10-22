@@ -269,7 +269,7 @@ export const u02: Unit = {
             { jp: 'へ', romaji: 'he', de: 'he' },
             { jp: 'ほ', romaji: 'ho', de: 'ho' },
           ],
-          tip: 'Bald wichtig: Als kleines Grammatik-Wort liest man は als „wa“ und へ als „e“. Das lernst du in der nächsten Einheit.',
+          tip: 'Bald wichtig: Als kleines Grammatik-Wort liest man は als „wa“ und へ als „e“. Das lernst du im Kurs „Japanisch“ ganz nebenbei.',
         },
         {
           type: 'choice',
